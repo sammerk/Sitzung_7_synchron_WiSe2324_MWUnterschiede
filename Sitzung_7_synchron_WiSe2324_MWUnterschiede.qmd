@@ -1,0 +1,250 @@
+---
+title: "Vorlesung"
+subtitle: "Einführung in qualitative und quantitative Forschungsmethoden"
+author: "Samuel Merk"
+format: 
+  revealjs:
+    auto-stretch: false
+    self-contained: true
+    slide-number: false
+    preview-links: false
+    pdf-separate-fragments: true
+    controls: true
+    logo: img/PHlogo.svg
+    theme: [simple, css/custom.scss]
+    fullscreen: true
+    pdfexport: true
+bibliography: references.bib
+csl: apa.csl
+---
+## Heutige Sitzung {.center}
+<br>
+[{{< fa brain >}}]{.imp} Warm-Up Aufgabe »aus dem Lehrerinnenzimmer«
+
+<br>
+[{{< fa rotate-right >}}]{.imp} Wiederholung mit Lernkarten
+
+<br>
+[{{< fa arrows-turn-to-dots >}}]{.imp} Elaboration mit »Schätzaufgaben«
+
+<br>
+[{{< fa arrows-turn-to-dots >}}]{.imp} Elaboration mit »Knobelaufgaben«
+
+<br>
+[{{< fa rotate-right >}}]{.imp} Wiederholung anhand Studie
+
+
+```{r hidden chunk which creates template stuff}
+#| echo: false
+
+## in terminal ########
+# quarto install extension quarto-ext/fontawesome
+# quarto install extension schochastics/academicons
+#
+
+########################
+library(fontawesome)
+library(tidyverse)
+
+# Change css to lecker PH green
+if(!dir.exists("img"))
+dir.create("img")
+if(!dir.exists("css"))
+dir.create("css")
+fileConn<-file("css/custom.scss")
+writeLines(c("/*-- scss:defaults --*/",
+             "$link-color: #8cd000 !default;"), fileConn)
+close(fileConn)
+
+# create sash with URL
+sash <- 
+  ggplot() + 
+  geom_polygon(data = tibble(x = c(0,4,5.5,0),
+                             y = c(1,5,5,-.5)),
+               aes(x,y), fill = "#8cd000") + 
+  coord_fixed() +
+  annotate(geom = "text", 
+           label = " ", 
+           x = .8, y = .8, 
+           angle = 45,
+           hjust = 0, vjust = 0,
+           size = 10,
+           color = "white") +
+ theme_void() + 
+ theme(plot.margin = margin(-2,0,0,-12, unit = "cm"))
+ggsave("img/sash.svg", sash)
+```
+
+```{css}
+.callout-title {background-color: #8cd000 !important;}
+
+.imp {
+  color: #8cd000;
+}
+
+.em08{
+  font-size: .8em;
+}
+.em07{
+  font-size: .7em;
+}
+
+.em15{
+  font-size: 1.5em;
+}
+
+
+figure>figcaption {
+    margin-top: 0.5em;
+    text-align: center;
+}
+
+.citation {
+  font-size: .8em;
+  color: #8cd000;
+}
+
+
+.timevis.html-widget .vis-background .vis-minor.vis-odd {
+  background: #8CD00030;
+  }
+  
+.vis-text {
+  color: #ffffff !important;
+  }
+  
+.vis-timeline {
+  border: transparent;
+  }
+  
+.vis-item {
+  border-color: #8CD000; 
+  background-color: #8CD000; 
+  color: #ffffff !important;
+}
+
+
+
+.vis-current-time {
+  background-color: #8CD00000;
+}
+  
+```
+
+
+
+## {{< fa brain >}} Aktivierung Ihres Vorwissens! {.center .smaller}
+:::: {.columns}
+
+::: {.column width='60%'}
+Frau Schmidt unterrichtet die Klassen 7a und 7b sowohl in Mathematik als auch in Deutsch. Sie hat den Eindruck, dass die Klasse 7b in beiden Fächern leistungsstärker ist. Sie denkt aber auch, dass der Unterschied in Mathematik deutlich größer ist. Um dem nachzugehen schreibt sie in beiden Klassen dieselbe Deutsch- und Mathematikklassenarbeit und erhält dabei die folgende Punkteverteilungen.
+
+<br>
+
+> Begründen Sie, inwiefern die Daten Fr. Schmidts Eindruck untermauern
+:::
+
+::: {.column width='40%'}
+```{r}
+#| echo: false
+#| warning: false
+#| results: hide
+
+library(bayestestR)
+library(tidyverse)
+library(viridis)
+library(hrbrthemes)
+library(effectsize)
+
+n7a <- 27
+n7b <- 25
+n <- n7a + n7b
+
+data <- 
+  tibble(Fach = c(rep("Deutsch", n), rep("Mathematik", n)),
+         Klasse = c(rep(c(rep("7a", n7a), rep("7b", n7b)), 2)),
+         `Punkte in KA` = c(round(distribution_beta(n7a, 4, 4)*12 + 10, 0), # D7a
+                            round(distribution_beta(n7b, 4, 4)*12 + 12, 0), # D7b
+                            round(distribution_beta(n7a, 18, 18)*12 + 10, 0), # M7a
+                            round(distribution_beta(n7b, 18, 18)*12 + 12, 0)) # M7b 
+         ) |> 
+    mutate()
+
+data |> 
+  group_by(Fach) |> 
+  do(cd = effsize::cliff.delta(`Punkte in KA` ~ Klasse, data = .)) |> 
+  summarize(cd = cd$estimate)
+```
+
+```{r}
+#| echo: false
+#| fig-width: 3
+#| fig-height: 6
+#| out-height: 100%
+
+ggplot(data, aes(`Punkte in KA`, color = Klasse)) +
+    geom_histogram(
+      aes(fill = Klasse),
+      alpha = .3,
+      binwidth = 1,
+      center = 1,
+      position = "identity"
+    ) +
+    facet_wrap(~ Fach, 
+               ncol = 1) +
+    scale_fill_viridis_d() +
+    scale_color_viridis_d(alpha = .5) +
+    scale_x_continuous(breaks = c(14, 16, 18, 20)) +
+  ylab("Anzahl Schüler*innen") +
+  theme_ipsum() +
+  theme(legend.position = "bottom",
+        plot.margin = margin(0, 0, 0, 2, "cm"))
+                            
+```
+
+:::
+
+::::
+
+
+## {{< fa arrows-turn-to-dots >}} Elaboration mit Schätzaufgaben {.smaller .center}
+> Bitte bearbeiten Sie die Schätzaufgaben auf moodle
+
+## {{< fa arrows-turn-to-dots >}} Elaboration mit Knobelaufgaben {.smaller .center}
+
+
+::: {.fragment}
+#### Knobelaufgabe 1:
+Zeichnen Sie jeweils zwei Boxplots für die sich ein Cliff's d von a) 0, b) 1, c) -1 ergibt.
+
+#### Knobelaufgabe 2:
+Zeichnen Sie jeweils zwei Boxplots für die sich ein Cliff's d von 0 ergibt, deren Streuung aber unterschiedlich ist.
+
+#### Knobelaufgabe 3:
+Schreiben Sie zwei Datenreihen mit jeweils 5 Datenpunkten auf, für die gilt: Cohen's $U_1$ ≠ 0 und Cliff's d = 0.
+:::
+
+
+
+## {{< fa rotate-right >}} Wdh. anhand Studie [@buergler2023] {.smaller .center}
+::: {.incremental}
+* Lesen Sie den Abstract der Studie unter [https://bit.ly/merk098 {{< fa square-up-right >}}](https://www.nature.com/articles/s41598-023-29624-7) (deepl.com o.Ä. hilft ggfs. bei der Übersetzung)
+* Kategorisieren Sie die Studie anhand des Abstracts als 
+    * explorativ/deskriptiv/explanativ, 
+    * experimentell/quasi-exp./nicht-exp., 
+    * längschnittlich/querschnittlich
+* Bewerten Sie die interne und externe Validität der Studie
+* Bewerten Sie die gefundenen Effektstärken
+* Skizzieren Sie drei Boxplots anhand aller im Abstract gegebenen Information, die ein plausibles Ergebnis der drei Gruppen in der Testperformance visualisieren und vergleichen Sie diese Skizze mit dem tatsächlichen Ergebnis in Figure 3
+:::
+
+
+
+
+
+
+
+## Literatur
+<style>
+div.callout {border-left-color: #8cd000 !important;
+</style>
